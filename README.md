@@ -2,6 +2,8 @@
 Live Visualisation of the IOTA Tangle using a dynamically layouted graph.
 Demo: http://tangle.glumb.de
 
+![IOTA TAngle](https://user-images.githubusercontent.com/3062564/56504720-bcf0db80-6519-11e9-898a-050709804887.png)
+
 ## Usage and UI
 All circles represent transactions (tx) in the IOTA Tangle. 
 A circular buffer is used to populate the viewer with the last 1800 (configurable) tx on page load.
