@@ -15,6 +15,7 @@ Hover a tx to see more details:
 Use the input boxes on the left to filter by hast, tag or bundle. The tag filter is applied using a regex. 
 
 Toggle switches on the top right:
+
 | config | description |
 |---|---|
 | remove floating tx  | some tx are not visually attached to the tangle since their attachement point lays so far back that it is not displayed anymore. Automatic removal of those tx increases performance |
