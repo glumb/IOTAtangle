@@ -1,0 +1,21 @@
+{
+  "name": "iotatangle",
+  "version": "1.0.0",
+  "description": "IOTA Tangle Glumb.de Visualiser",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Maximilian Beck <maximilian@glumb.de> (http://glumb.de/)",
+  "license": "MIT",
+  "dependencies": {
+    "denque": "1.2.2",
+    "double-ended-queue": "2.1.0-0",
+    "express": "4.16.2",
+    "express-minify": "1.0.0",
+    "iota.lib.js": "0.5.1",
+    "socketio": "1.0.0",
+    "uglify-es": "3.2.2",
+    "zeromq": "4.6.0"
+  }
+}
