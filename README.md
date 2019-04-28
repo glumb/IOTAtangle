@@ -1,9 +1,10 @@
 # IOTA Tangle Visualiser 🦔
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/6329c35e70164a69bf4ee7ce844b1ff2)](https://app.codacy.com/app/glumb/IOTAtangle?utm_source=github.com&utm_medium=referral&utm_content=glumb/IOTAtangle&utm_campaign=Badge_Grade_Dashboard)
+[![Codacy Badge](https://img.shields.io/codacy/grade/6329c35e70164a69bf4ee7ce844b1ff2.svg)](https://app.codacy.com/app/glumb/IOTAtangle?utm_source=github.com&utm_medium=referral&utm_content=glumb/IOTAtangle&utm_campaign=Badge_Grade_Dashboard)
+![Codacy Badge](https://img.shields.io/badge/IOTA-100%25-94c63b.svg)
 
 Live Visualisation of the IOTA Tangle using a dynamically layouted graph.
-Demo: http://tangle.glumb.de
+Demo: [http://tangle.glumb.de](http://tangle.glumb.de)
 
 ![IOTA TAngle](https://user-images.githubusercontent.com/3062564/56504720-bcf0db80-6519-11e9-898a-050709804887.png)
 
