@@ -106,7 +106,7 @@ The data send to the client via WebSocket follow this structure:
 
 **TX - Transaction**
 
-```json
+```js
 {
   hash,
   address,
@@ -123,7 +123,7 @@ The data send to the client via WebSocket follow this structure:
 
 **SN - Confirmed Transaction**
 
-```json
+```js
 {
   hash,
   address,
@@ -139,16 +139,17 @@ The clients data interface is based on the SocketIO library. Therefore it is ser
 
 On initialisation/pageload the following events are expected:
 
-```
-socket.emit('config', FRONTEND_CONFIG) // { networkName }
-socket.emit('inittx', txArray) // see format above
-socket.emit('initsn', snArray) // see format above
-socket.emit('initms', mileStoneArray) // Array of milestone tx hashes
+```js
+socket.emit("config", FRONTEND_CONFIG); // { networkName }
+socket.emit("inittx", txArray); // see format above
+socket.emit("initsn", snArray); // see format above
+socket.emit("initms", mileStoneArray); // Array of milestone tx hashes
 ```
 
 During runtime the following event can be fired:
-````
-socket.emit('tx', tx) // see format above
-socket.emit('sn', sn) // see format above
-socket.emit('ms', ms) // milestone tx hash
-````
+
+```js
+socket.emit("tx", tx); // see format above
+socket.emit("sn", sn); // see format above
+socket.emit("ms", ms); // milestone tx hash
+```
