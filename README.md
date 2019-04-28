@@ -1,5 +1,7 @@
 # IOTA Tangle Visualiser 🦔
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/6329c35e70164a69bf4ee7ce844b1ff2)](https://app.codacy.com/app/glumb/IOTAtangle?utm_source=github.com&utm_medium=referral&utm_content=glumb/IOTAtangle&utm_campaign=Badge_Grade_Dashboard)
+
 Live Visualisation of the IOTA Tangle using a dynamically layouted graph.
 Demo: http://tangle.glumb.de
 
