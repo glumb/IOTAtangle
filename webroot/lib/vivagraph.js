@@ -2635,8 +2635,8 @@
                 }
             }
 
-            sourceBody.force.x += fx + force.x; //todo change
-            sourceBody.force.y += fy + force.y;
+            sourceBody.force.x += fx + force.x/(Math.abs(sourceBody.pos.x)*0.01+1); //todo change
+            sourceBody.force.y += fy + force.y/(Math.abs(sourceBody.pos.y)*0.01+1);
         }
 
         function insertBodies(bodies) {

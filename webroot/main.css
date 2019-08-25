@@ -1,4 +1,5 @@
-body, html {
+body,
+html {
   height: 100%;
   width: 100%;
   margin: 0;
@@ -25,31 +26,28 @@ div#message {
 .graph {
   width: 100%;
   height: 100%;
+  position: relative;
 }
 
-#stats{
+#stats {
   position: absolute;
   right: 10px;
   bottom: 41px;
 }
 
-#stats > *{
+#stats>* {
   text-align: right;
 }
 
-#github{
+#github {
   position: absolute;
   right: 10px;
   bottom: 11px;
 }
 
-#node-counter {
+#node-counter {}
 
-}
-
-#tps {
-
-}
+#tps {}
 
 #tx-info {
   position: absolute;
@@ -96,7 +94,7 @@ span#node {
   background: #e23df4;
 }
 
-#bundle{
+#bundle {
   border: none;
   background: #1287ff;
 }
@@ -144,15 +142,33 @@ div#options {
   display: none;
 }
 
-.tgl, .tgl:after, .tgl:before, .tgl *, .tgl *:after, .tgl *:before, .tgl+.tgl-btn {
+.tgl,
+.tgl:after,
+.tgl:before,
+.tgl *,
+.tgl *:after,
+.tgl *:before,
+.tgl+.tgl-btn {
   box-sizing: border-box;
 }
 
-.tgl::-moz-selection, .tgl:after::-moz-selection, .tgl:before::-moz-selection, .tgl *::-moz-selection, .tgl *:after::-moz-selection, .tgl *:before::-moz-selection, .tgl+.tgl-btn::-moz-selection {
+.tgl::-moz-selection,
+.tgl:after::-moz-selection,
+.tgl:before::-moz-selection,
+.tgl *::-moz-selection,
+.tgl *:after::-moz-selection,
+.tgl *:before::-moz-selection,
+.tgl+.tgl-btn::-moz-selection {
   background: none;
 }
 
-.tgl::selection, .tgl:after::selection, .tgl:before::selection, .tgl *::selection, .tgl *:after::selection, .tgl *:before::selection, .tgl+.tgl-btn::selection {
+.tgl::selection,
+.tgl:after::selection,
+.tgl:before::selection,
+.tgl *::selection,
+.tgl *:after::selection,
+.tgl *:before::selection,
+.tgl+.tgl-btn::selection {
   background: none;
 }
 
@@ -169,7 +185,8 @@ div#options {
   user-select: none;
 }
 
-.tgl+.tgl-btn:after, .tgl+.tgl-btn:before {
+.tgl+.tgl-btn:after,
+.tgl+.tgl-btn:before {
   position: relative;
   display: block;
   content: "";
@@ -230,21 +247,21 @@ label.option-label {
 }
 
 body.dark-mode {
-    background: #071821;
-    color: white;
+  background: #071821;
+  color: white;
 }
 
 .dark-mode span#confirmed {
-    background: white;
-    border-color: white;
+  background: white;
+  border-color: white;
 }
 
 .dark-mode span#node {
-    background: black;
+  background: black;
 }
 
 .dark-mode span.circle {
-    border-color: white!important;
+  border-color: white !important;
 }
 
 .dark-mode a {
@@ -256,44 +273,51 @@ a {
 }
 
 .pay-with-iota {
-    position: absolute;
-    bottom: 225px;
-    width: 170px;
-    right: 0px;
+  position: absolute;
+  bottom: 225px;
+  width: 170px;
+  right: 0px;
 }
 
 .pay-with-iota img {
-    width: 170px;
+  width: 170px;
 }
 
 .option:hover::before {
-    content: attr(data-tooltip);
-    position: absolute;
-    right: 172px;
-    top: 12px;
-    background: #080808;
-    padding: 5px;
-    width: max-content;
-    border-radius: 5px;
-    color: white;
+  content: attr(data-tooltip);
+  position: absolute;
+  right: 172px;
+  top: 12px;
+  background: #080808;
+  padding: 5px;
+  width: max-content;
+  border-radius: 5px;
+  color: white;
 }
 
 .option {
-    position: relative;
+  position: relative;
 }
 
 .loader {
-    border: 6px solid #1d1d1d; /* Light grey */
-    border-top: 6px solid #fff; /* Blue */
-    border-radius: 50%;
-    width: 55px;
-    height: 55px;
-    animation: spin 2.5s linear infinite;
+  border: 6px solid #1d1d1d;
+  /* Light grey */
+  border-top: 6px solid #fff;
+  /* Blue */
+  border-radius: 50%;
+  width: 55px;
+  height: 55px;
+  animation: spin 2.5s linear infinite;
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .loader-wrapper {
@@ -309,7 +333,7 @@ a {
   z-index: 100;
 }
 
-.loader-wrapper .progress{
+.loader-wrapper .progress {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -322,57 +346,57 @@ a {
 }
 
 .donation {
-    padding: 1px;
+  padding: 1px;
 }
 
 .donation span {
-    margin: 4px;
-    font-size: small;
+  margin: 4px;
+  font-size: small;
 }
 
 .donation-container {
-    position: absolute;
-    right: 0px;
-    bottom: 190px;
-    /* width: 100px; */
-    display: inline-block;
-    height: 10px;
-    margin: 10px;
+  position: absolute;
+  right: 0px;
+  bottom: 190px;
+  /* width: 100px; */
+  display: inline-block;
+  height: 10px;
+  margin: 10px;
 }
 
 .donation-hidden {
-    display: block;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: #07152be6;
-    position: absolute;
-    z-index: 999;
+  display: block;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #07152be6;
+  position: absolute;
+  z-index: 999;
 }
 
 
 .donation-message {
-    margin: auto;
-    width: 500px;
-    top: 50%;
-    position: relative;
-    color: white;
-    transform: translate(0,-50%);
+  margin: auto;
+  width: 500px;
+  top: 50%;
+  position: relative;
+  color: white;
+  transform: translate(0, -50%);
 }
 
 .donation-hidden span.donation-address {
-    font-size: 9px;
+  font-size: 9px;
 }
 
 input#donation-message {
-    width: 230px;
+  width: 230px;
 }
 
 #donation-message-preview a {
-    color: white;
+  color: white;
 }
 
 .donation-container button {
-    float: right;
+  float: right;
 }
