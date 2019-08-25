@@ -640,6 +640,10 @@
                 return isStableNow;
             },
 
+            setForce : function(force){
+                physicsSimulator.setForce(force)
+            },
+
             /**
      * For a given `nodeId` returns position
      */
@@ -792,7 +796,7 @@
                 var change = changes[i];
                 if (change.changeType === 'add') {
                     if (change.node) {
-                        initBody(change.node.id);
+                        initBody(change.node.id, change.node.position); //todo changes
                     }
                     if (change.link) {
                         initLink(change.link);
@@ -820,7 +824,7 @@
             graph.forEachLink(initLink);
         }
 
-        function initBody(nodeId) {
+        function initBody(nodeId, position) {
             var body = nodeBodies[nodeId];
             if (!body) {
                 var node = graph.getNode(nodeId);
@@ -828,7 +832,7 @@
                     throw new Error('initBody() was called with unknown node id');
                 }
 
-                var pos = node.position;
+                var pos = position || node.position;
                 if (!pos) {
                     var neighbors = getNeighborBodies(node);
                     pos = physicsSimulator.getBestNewBodyPosition(neighbors);
@@ -1545,7 +1549,7 @@
             });
         }
 
-        function addNode(nodeId, data) {
+        function addNode(nodeId, data, position) {
             if (nodeId === undefined) {
                 throw new Error('Invalid node identifier');
             }
@@ -1557,11 +1561,11 @@
                 // TODO: Should I check for 👉  here?
                 node = new Node(nodeId);
                 nodesCount++;
+                node.position = position
                 recordNodeChange(node, 'add');
             } else {
                 recordNodeChange(node, 'update');
             }
-
             node.data = data;
 
             nodes[nodeId] = node;
@@ -1991,6 +1995,8 @@
        * Default time step (dt) for forces integration
        */
             timeStep : 20,
+
+            force: {x:0, y:0}
         });
 
         // We allow clients to override basic factory methods:
@@ -2174,6 +2180,16 @@
                     return this;
                 } else {
                     return settings.theta;
+                }
+            },
+
+            setForce: function (value) {
+                if (value !== undefined) {
+                    settings.force = value;
+                    quadTree.options({force: value});
+                    return this;
+                } else {
+                    return settings.force;
                 }
             }
         };
@@ -2458,6 +2474,7 @@
         options = options || {};
         options.gravity = typeof options.gravity === 'number' ? options.gravity : -1;
         options.theta = typeof options.theta === 'number' ? options.theta : 0.8;
+        options.force = typeof options.force === 'object' ? options.force : {x:0,y:0};
 
         // we require deterministic randomness here
         var random = require('ngraph.random').random(1984),
@@ -2469,6 +2486,7 @@
             updateQueue = [],
             insertStack = new InsertStack(),
             theta = options.theta,
+            force = options.force;
 
             nodesCache = [],
             currentInCache = 0,
@@ -2490,6 +2508,9 @@
                     }
                     if (typeof newOptions.theta === 'number') {
                         theta = newOptions.theta;
+                    }
+                    if (typeof newOptions.force === 'object') {
+                        force = newOptions.force;
                     }
 
                     return this;
@@ -2614,8 +2635,8 @@
                 }
             }
 
-            sourceBody.force.x += fx;
-            sourceBody.force.y += fy;
+            sourceBody.force.x += fx + force.x; //todo change
+            sourceBody.force.y += fy + force.y;
         }
 
         function insertBodies(bodies) {

@@ -4,9 +4,17 @@
 $(document).ready(() => {
     // defaults
 
+    const LOG = false
 
     const CONFIG = {
+        // layout engine tuning
+        SPRINGLENGTH: 10,
+        SPRINGCOEFF: 0.0001,
+        GRAVITY: -4,
+        DRAGCOEFF: 0.02,
+        TIMESTEP: 22,
 
+        FORCE: {x:0,y:0.05},
         CIRCLE_SIZE: 30, // size of a node
         REMOVE_LONLY_AFTER_S: 30, // remove floating nodes after time
         REMOVE_SMALLER_THAN_PERCENTAGE_OF_TOTAL_MESH: 0.03, // remove graphs that are smaller than % of all nodes
@@ -24,6 +32,7 @@ $(document).ready(() => {
         SPAWN_NODE_NEAR_FINAL_POSITION: true, // spawns new nodes close to their neighbours
         COLOR_BY_NUMBER: false, // color ty based on the order they appear on screen. Continuous hue rotation
         DARK_MODE: false,
+        STATIC_FRONT: false, // spawn new nodes at one position and move tangle outwards
 
         // colors
         HIGHLIGHT_MULTIPLE_COLOR: 0xda4b29, // for tags, hash, bundle filter
@@ -38,6 +47,15 @@ $(document).ready(() => {
         LINK_COLOR: 0,
         NODE_COLOR: 0,
         NODE_BG_COLOR: 0,
+    }
+
+    const urlParams = new URLSearchParams(window.location.search)
+
+    for (const parameter in CONFIG) {
+        if (urlParams.has(parameter)) {
+            const value = urlParams.get(parameter)
+            CONFIG[parameter] = JSON.parse(value)
+        }
     }
 
     CONFIG.LINK_COLOR = CONFIG.LIGHT_LINK_COLOR
@@ -57,14 +75,14 @@ $(document).ready(() => {
         const graphics = Viva.Graph.View.webglGraphics()
 
         const layout = Viva.Graph.Layout.forceDirected(graph, {
-            springLength: 10,
-            springCoeff: 0.0001,
-            gravity: -4,
-            dragCoeff: 0.02,
+            springLength: CONFIG.SPRINGLENGTH,
+            springCoeff: CONFIG.SPRINGCOEFF,
+            gravity: CONFIG.GRAVITY,
+            dragCoeff: CONFIG.DRAGCOEFF,
             // dragCoeff: 0.02,
             // theta: 0.25,
             // theta: 0.8,default
-            timeStep: 22,
+            timeStep: CONFIG.TIMESTEP,
         })
 
         const renderer = Viva.Graph.View.renderer(graph, {
@@ -227,12 +245,70 @@ $(document).ready(() => {
         }
     })(VVG)
 
+    /**
+     * Tangle stats
+     */
+    const Stats = (($, socket) => {
+
+        const $nodeCounter = $('#node-counter')
+        const $confirmedRatio = $('#confirmed-ratio')
+        const $tipsRatio = $('#tips-ratio')
+        const $tps = $('#tps')
+        let confirmedTxCounter = 1
+        let tipsCounter = 0
+        let tpsCounter = 0
+
+
+        socket.on('initms', () => { // should call after the first listener that actually adds the ms
+            Graphs.iterateAllNodes((node) => {
+                if (node.confirmed) confirmedTxCounter++
+                if (node.tip) tipsCounter++
+            })
+        })
+
+        socket.on('tx', () => {
+            tpsCounter++
+            tipsCounter += tipsCounter / VVG.graph.getNodesCount() - 0.01
+            //estimation one new tx reduces the tx count by 1 if it connects to 2 tips, but by 0 if it connects to 2 non tips
+            //so to not reducs the ratio with new tx
+        })
+
+        socket.on('ms', () => {
+            confirmedTxCounter = 0
+            tipsCounter = 0
+            Graphs.iterateAllNodes((node) => {
+                if (node.confirmed) confirmedTxCounter++
+                if (node.tip) tipsCounter++
+            })
+        })
+
+        setInterval(() => {
+            $nodeCounter.text('transactions: ' + VVG.graph.getNodesCount())
+            $confirmedRatio.text('confirmed ratio: ' + (confirmedTxCounter / VVG.graph.getNodesCount() * 100).toFixed(2) + '%')
+            $tipsRatio.text('tips ratio: ' + (tipsCounter / VVG.graph.getNodesCount() * 100).toFixed(2) + '%')
+        }, 500)
+
+        const updateInterval = 2000
+        const TPSFloatingMean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        let tps = 0
+        setInterval(() => {
+            TPSFloatingMean.push(tpsCounter / updateInterval * 1000)
+            TPSFloatingMean.shift()
+            tps = TPSFloatingMean.reduce((p, c) => p + c, 0) / TPSFloatingMean.length
+            $tps.text('(30s avg) tps: ' + (tps).toFixed(2))
+            tpsCounter = 0
+        }, updateInterval)
+
+        return {
+            get tps(){return tps}
+        }
+    })($, socket)
 
     /**
     * Handles manipulation of individual graphs
     * removal of small graphs/orphans
     */
-    const Graphs = ((CONFIG, VVG, Iterators) => {
+    const Graphs = ((CONFIG, VVG, Iterators, Stats) => {
         const smallGraphsQueue = {}
         let nodeNumber = 0
 
@@ -276,7 +352,7 @@ $(document).ready(() => {
         function removeSmallGraphs() {
             const numberOfNodes = VVG.graph.getNodesCount()
             // if the expected effort to calculate all mesh sizes for item in sGQ is larger than number of nodes, reduce the SGQ first O(n)
-            console.log(Object.keys(smallGraphsQueue).length)
+            if(LOG)console.log(Object.keys(smallGraphsQueue).length)
             if (Object.keys(smallGraphsQueue).length * CONFIG.REMOVE_SMALLER_THAN_PERCENTAGE_OF_TOTAL_MESH > 2) { //4/0.03=133 - give it some room to work with. queu gets automatically reduced
                 updateGraphsList()
             }
@@ -309,19 +385,24 @@ $(document).ready(() => {
                 smallGraphsQueue[lastTimeId] = lastTime
                 if (nodes.length < CONFIG.REMOVE_SMALLER_THAN_PERCENTAGE_OF_TOTAL_MESH * numberOfNodes &&
                     Date.now() - lastTime > CONFIG.REMOVE_LONLY_AFTER_S * 1000) {
-                    console.log('mesh of size: ' + nodes.length + ' is smaller than ' + CONFIG.REMOVE_SMALLER_THAN_PERCENTAGE_OF_TOTAL_MESH * 100 + '% of the total node count: ' + CONFIG.REMOVE_SMALLER_THAN_PERCENTAGE_OF_TOTAL_MESH * numberOfNodes)
+                    if(LOG)console.log('mesh of size: ' + nodes.length + ' is smaller than ' + CONFIG.REMOVE_SMALLER_THAN_PERCENTAGE_OF_TOTAL_MESH * 100 + '% of the total node count: ' + CONFIG.REMOVE_SMALLER_THAN_PERCENTAGE_OF_TOTAL_MESH * numberOfNodes)
 
                     for (const node of nodes)
                         addToDeleteQueue(node.id)
                     // VVG.graph.removeNode(node.id)
                 }
             }
-            console.log(Object.keys(smallGraphsQueue).length)
+            if(LOG)console.log(Object.keys(smallGraphsQueue).length)
         }
 
         const deleteQueue = []
 
         function addToDeleteQueue(nodeId) {
+            if(Stats.tps > 100){ // performance optimisation
+                VVG.graph.removeNode(nodeId)
+                return
+            }
+
             if (deleteQueue.indexOf(nodeId) < 0)
                 deleteQueue.push(nodeId)
 
@@ -335,7 +416,7 @@ $(document).ready(() => {
         // to not delete bulks of nodes at once, a delete queue is used. It gradually removes nodes one at a time.
         function processDeleteQueue() {
             if (deleteQueue.length > 0) {
-                console.log('delete queue len', deleteQueue.length)
+                if(LOG)console.log('delete queue len', deleteQueue.length)
 
                 setTimeout(() => {
                     do {
@@ -353,7 +434,7 @@ $(document).ready(() => {
                             VVG.graph.removeNode(nodeToDelete)
                             deleteNodeCount++
                         } else {
-                            console.log('not deleted')
+                            if(LOG)console.log('not deleted')
                         }
                     } while (deleteQueue.length > 200)
                     processDeleteQueue()
@@ -367,7 +448,7 @@ $(document).ready(() => {
                 let lastTime = 0
                 let lastTimeId = nodeId
 
-                console.log('iter')
+                if(LOG)console.log('iter')
 
                 Iterators.iterateAllConnectedNodes(VVG.graph.getNode(nodeId), (node) => {
                     // much faster than hasOwnProperty
@@ -411,7 +492,7 @@ $(document).ready(() => {
                 if (node.number <= maxNumberToDelete) {
                     addToDeleteQueue(node.id)
 
-                    console.log('removed node', node.id)
+                    if(LOG)console.log('removed node', node.id)
                     if (--numberToDelete <= 1) return true // break when deleted enough
                 }
 
@@ -435,9 +516,9 @@ $(document).ready(() => {
                     if (node.number <= maxNumberToPin) {
                         VVG.layout.pinNode(node, true)
                         if (node.number > highestPinnedNumber) {
-                            console.log('pinned node', node.id)
+                            if(LOG)console.log('pinned node', node.id)
                             if (--numberToPin <= 1) {
-                                console.log('breaking -----------')
+                                if(LOG)console.log('breaking -----------')
                                 return true // break when pinned enough
                             }
                         }
@@ -462,7 +543,7 @@ $(document).ready(() => {
             isDeleteQueueEmpty,
             unpinOldNodes
         }
-    })(CONFIG, VVG, Iterators)
+    })(CONFIG, VVG, Iterators, Stats)
 
     setInterval(() => {
         if (CONFIG.REMOVE_FLOATING_NODES)
@@ -787,7 +868,7 @@ $(document).ready(() => {
             .mouseup(function () {
                 const wasDragging = isDragging
                 isDragging = false
-                console.log(wasDragging)
+                if(LOG)console.log(wasDragging)
                 if (!wasDragging) {
                     selectNode(mouseOverNode)
                 }
@@ -830,13 +911,13 @@ $(document).ready(() => {
 
         function fit() {
             const graphRect = VVG.layout.getGraphRect()
-            console.log(graphRect)
+            if(LOG)console.log(graphRect)
             const graphSize = Math.min(graphRect.x2 - graphRect.x1, graphRect.y2 - graphRect.y1)
             const screenSize = Math.min(document.body.clientWidth, document.body.clientHeight)
 
             const desiredScale = screenSize / graphSize
 
-            console.log(desiredScale)
+            if(LOG)console.log(desiredScale)
             VVG.renderer.moveTo(0, 0)
             zoom(desiredScale, VVG.renderer.zoomOut())
         }
@@ -1053,15 +1134,6 @@ $(document).ready(() => {
 
         //#region HANDLE URL PARAMETERS
 
-        const urlParams = new URLSearchParams(window.location.search)
-
-        for (const parameter in CONFIG) {
-            if (urlParams.has(parameter)) {
-                const value = urlParams.get(parameter)
-                CONFIG[parameter] = JSON.parse(value)
-            }
-        }
-
         function initAfterNodesAdded() {
 
             if (urlParams.has('hash')) {
@@ -1097,10 +1169,12 @@ $(document).ready(() => {
      */
     const App = ((VVG, socket, Color, Styles, Graphs, Iterators, UrlParams, Loading) => {
         let nodeNumber = 0
+        let pinnedNodesqueue = [null,null,null,null,null,null,null,null,null,null]
+        let pinnedNodesPointer = 0
 
         function addNode(data) {
 
-            // console.log(data)
+            // if(LOG)console.log(data)
             let tip = true
             const existingNode = VVG.graph.getNode(data.hash)
             if (existingNode) {
@@ -1114,10 +1188,18 @@ $(document).ready(() => {
             if (CONFIG.SPAWN_NODE_NEAR_FINAL_POSITION)
                 VVG.graph.beginUpdate()
 
-            const node = VVG.graph.addNode(data.hash, data)
+            const node = VVG.graph.addNode(data.hash, data, (CONFIG.STATIC_FRONT)?{x:Math.random()*100,y:Math.random()*100}:undefined)
+            if(!node.number && CONFIG.STATIC_FRONT){ //no number => new node
+                VVG.layout.pinNode(node, true)
+                pinnedNodesqueue[pinnedNodesPointer] = node
+                pinnedNodesPointer = (++pinnedNodesPointer)%10
+
+                if(pinnedNodesqueue[pinnedNodesPointer])
+                    VVG.layout.pinNode(pinnedNodesqueue[pinnedNodesPointer], false)
+            }
+            
             node.tip = tip
             node.number = node.number || ++nodeNumber //increment number only if not exists
-
 
             VVG.graph.addLink(data.transaction_branch, data.hash)
             VVG.graph.addLink(data.transaction_trunk, data.hash)
@@ -1154,7 +1236,7 @@ $(document).ready(() => {
                 const node = VVG.graph.getNode(nodeId)
                 if (node) {
                     node.milestone = true
-                    console.log('ms found', ui)
+                    if(LOG)console.log('ms found', ui)
                     Styles.update(node)
                 }
             }
@@ -1164,7 +1246,7 @@ $(document).ready(() => {
             const node = VVG.graph.getNode(nodeId)
             if (node) {
                 node.confirmed = true
-                // console.log('sn found', ui)
+                // if(LOG)console.log('sn found', ui)
                 Styles.update(node)
             }
         }
@@ -1215,64 +1297,6 @@ $(document).ready(() => {
         Selection.updateActiveNodeSelection()
         Styles.update()
     }, 3000)
-
-
-    /**
-     * Tangle stats
-     */
-    const Stats = (($, Graphs, socket) => {
-
-        const $nodeCounter = $('#node-counter')
-        const $confirmedRatio = $('#confirmed-ratio')
-        const $tipsRatio = $('#tips-ratio')
-        const $tps = $('#tps')
-        let confirmedTxCounter = 1
-        let tipsCounter = 0
-        let tpsCounter = 0
-
-
-        socket.on('initms', () => { // should call after the first listener that actually adds the ms
-            Graphs.iterateAllNodes((node) => {
-                if (node.confirmed) confirmedTxCounter++
-                if (node.tip) tipsCounter++
-            })
-        })
-
-        socket.on('tx', () => {
-            tpsCounter++
-            tipsCounter += tipsCounter / VVG.graph.getNodesCount() - 0.01
-            //estimation one new tx reduces the tx count by 1 if it connects to 2 tips, but by 0 if it connects to 2 non tips
-            //so to not reducs the ratio with new tx
-        })
-
-        socket.on('ms', () => {
-            confirmedTxCounter = 0
-            tipsCounter = 0
-            Graphs.iterateAllNodes((node) => {
-                if (node.confirmed) confirmedTxCounter++
-                if (node.tip) tipsCounter++
-            })
-        })
-
-        setInterval(() => {
-            $nodeCounter.text('transactions: ' + VVG.graph.getNodesCount())
-            $confirmedRatio.text('confirmed ratio: ' + (confirmedTxCounter / VVG.graph.getNodesCount() * 100).toFixed(2) + '%')
-            $tipsRatio.text('tips ratio: ' + (tipsCounter / VVG.graph.getNodesCount() * 100).toFixed(2) + '%')
-        }, 500)
-
-        const updateInterval = 2000
-        const TPSFloatingMean = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-        setInterval(() => {
-            TPSFloatingMean.push(tpsCounter / updateInterval * 1000)
-            TPSFloatingMean.shift()
-            const tps = TPSFloatingMean.reduce((p, c) => p + c, 0) / TPSFloatingMean.length
-            $tps.text('(30s avg) tps: ' + (tps).toFixed(2))
-            tpsCounter = 0
-        }, updateInterval)
-
-
-    })($, Graphs, socket)
-
 
     // eslint-disable-next-line no-unused-vars
     function getGraphBoundingBox(node) {
@@ -1381,11 +1405,11 @@ $(document).ready(() => {
                 Graphs.iterateAllNodes((node) => {
                     if (node.data && node.data.value && +node.data.value > maxVal) maxVal = +node.data.value
                 })
-                console.log('maxval', maxVal)
+                if(LOG)console.log('maxval', maxVal)
                 size_filter = Styles.add((node) => {
                     if (node.data && node.data.value && node.data.value > maxVal) Styles.clearCache()
 
-                    // console.log('size', (node.data && node.data.value) ? 1 + (CONFIG.CIRCLE_SIZE *  node.data.value/maxVal): 1)
+                    // if(LOG)console.log('size', (node.data && node.data.value) ? 1 + (CONFIG.CIRCLE_SIZE *  node.data.value/maxVal): 1)
                     const nodeUI = VVG.graphics.getNodeUI(node.id)
                     nodeUI.size = (node.data && node.data.value) ? 1 + (Math.sqrt(1 + Math.abs(+node.data.value) / maxVal * CONFIG.CIRCLE_SIZE * CONFIG.CIRCLE_SIZE)) : 1
                 })
@@ -1465,6 +1489,15 @@ $(document).ready(() => {
             CONFIG.NODE_BG_COLOR = (CONFIG.DARK_MODE) ? 0x333333 : CONFIG.LIGHT_NODE_BG_COLOR
             Graphs.iterateAllNodes(false, (link) => Color.colorLink(link))
             Styles.clearCache()
+            $('body').toggleClass('dark-mode', CONFIG.DARK_MODE)
+        })
+        $('#STATIC_FRONT').change(function () {
+            CONFIG.STATIC_FRONT = !!this.checked
+            if(CONFIG.STATIC_FRONT){
+                VVG.layout.setForce(CONFIG.FORCE)
+            }else{
+                VVG.layout.setForce({x:0,y:0})
+            }
             $('body').toggleClass('dark-mode', CONFIG.DARK_MODE)
         })
 
