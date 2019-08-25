@@ -112,15 +112,15 @@ The data send to the client via WebSocket follow this structure:
 ```js
 {
   hash,
-  address,
-  value,
-  tag,
-  timestamp,
-  current_index,
-  last_index,
-  bundle_hash,
-  transaction_trunk,
-  transaction_branch
+    address,
+    value,
+    tag,
+    timestamp,
+    current_index,
+    last_index,
+    bundle_hash,
+    transaction_trunk,
+    transaction_branch;
 }
 ```
 
@@ -128,11 +128,7 @@ The data send to the client via WebSocket follow this structure:
 
 ```js
 {
-  hash,
-  address,
-  transaction_trunk,
-  transaction_branch,
-  bundle
+  hash, address, transaction_trunk, transaction_branch, bundle;
 }
 ```
 
@@ -155,4 +151,69 @@ During runtime the following event can be fired:
 socket.emit("tx", tx); // see format above
 socket.emit("sn", sn); // see format above
 socket.emit("ms", ms); // milestone tx hash
+```
+
+### API
+
+include th following scripts
+
+```html
+<link rel="stylesheet" href="main.css" />
+<script src="lib/vivagraph.js"></script>
+<script src="main.js"></script>
+<script
+  src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+  crossorigin="anonymous"
+></script>
+```
+
+Instantiate `TangleGlumb($DOMElement, [config])`
+
+```js
+const tg = TangleGlumb(document.getElementById("graph"), {
+  CIRCLE_SIZE: 60,
+  PIN_OLD_NODES: false,
+  STATIC_FRONT: false
+});
+
+tg.updateTx([tx]);
+tg.removeTx([tx]);
+```
+
+Add and update array of transactions using `TG.updateTx(Array<txObj>)`
+
+```js
+const tx = {
+  hash: "",
+  address: "",
+  value: 0,
+  timestamp: Date.now(),
+  bundle_hash: "",
+  transaction_branch: "",
+  transaction_trunk: "",
+  tag: ""
+  milestone: false, //optional
+  confirmed: false, //optional
+};
+
+tg.updateTx([tx]);
+```
+
+Remove transactions from the visualisation using `TG.removeTx(Array<txObj|hash>)`
+
+```js
+const tx = {
+  hash: "",
+  address: "",
+  value: 0,
+  timestamp: Date.now(),
+  bundle_hash: "",
+  transaction_branch: "",
+  transaction_trunk: "",
+  tag: ""
+  milestone: false, //optional
+  confirmed: false, //optional
+};
+
+tg.removeTx([tx, tx.hash]);
 ```
