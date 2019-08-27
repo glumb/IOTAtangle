@@ -30,7 +30,7 @@ const TangleGlumb = ($container, config = {}) => {
 
         // options
         REMOVE_FLOATING_NODES: true,
-        COLOR_BY_DEPTH: false,
+        SIZE_BY_DEPTH: false,
         SIZE_BY_VALUE: false, // size based on transferred iota value
         SIZE_BY_WEIGHT: false, // tx that confirm more tx have a bigger diameter
         REMOVE_OLD_NODES: false, // only MAX_NODES tx are kept on screen. Older tx are deleted first.
@@ -1596,9 +1596,10 @@ const TangleGlumb = ($container, config = {}) => {
 
             let node = VVG.graph.getNode(data.hash)
             if (
-                (!node && !data.transaction_branch) ||
-                !data.transaction_trunk ||
-                !data.hash
+                !node &&
+                (!data.transaction_branch ||
+                    !data.transaction_trunk ||
+                    !data.hash)
             ) {
                 console.warn(
                     'new node must contail all required fields [branch,trunk,hash]'
@@ -1661,7 +1662,9 @@ const TangleGlumb = ($container, config = {}) => {
 
             Graphs.addNode(data.hash, nodeNumber)
 
-            if (node.milestone) processNewMilestone(data.hash)
+            if (node.milestone) {
+                processNewMilestone(data.hash)
+            }
         }
 
         function processNewMilestone(nodeId) {
@@ -1750,6 +1753,8 @@ const TangleGlumb = ($container, config = {}) => {
         $optionContainer.setAttribute('id', 'options')
         $container.appendChild($optionContainer)
 
+        let OPTIONS = {}
+
         function createToggleOption(id, name, desc) {
             $optionContainer.insertAdjacentHTML(
                 'beforeend',
@@ -1762,17 +1767,31 @@ const TangleGlumb = ($container, config = {}) => {
                 </div>`
             )
 
-            return {
-                change: cb => {
-                    console.log('here')
+            let listener
+            let initial = true
+            const onChange = () => {}
 
-                    document
-                        .getElementById(id)
-                        .addEventListener('change', event => {
-                            cb(event.target.checked)
-                        })
+            const api = {
+                onChange: cb => {
+                    listener = cb
+                },
+                set: val => {
+                    if (listener && (CONFIG[id] !== val || initial)) {
+                        // val has changed or is initial call
+                        listener(val)
+                        CONFIG[id] = val
+                        document.getElementById(id).checked = !!val
+                        initial = false
+                    }
                 }
             }
+
+            document.getElementById(id).addEventListener('change', event => {
+                api.set(event.target.checked)
+            })
+
+            OPTIONS[id] = api
+            return api
         }
 
         function calculateConfirms(node, confirms, mode) {
@@ -1788,19 +1807,17 @@ const TangleGlumb = ($container, config = {}) => {
         }
 
         let size_filter = false
-        createToggleOption('SIZE_BY_DEPTH', 'size by # of confirms').change(
+        createToggleOption('SIZE_BY_DEPTH', 'size by # of confirms').onChange(
             function(checked) {
-                $('#SIZE_BY_VALUE').prop('checked', false)
-                $('#SIZE_BY_WEIGHT').prop('checked', false)
-
-                CONFIG.COLOR_BY_DEPTH = !!checked
+                if (CONFIG.SIZE_BY_VALUE) OPTIONS.SIZE_BY_VALUE.set(false)
+                if (CONFIG.SIZE_BY_WEIGHT) OPTIONS.SIZE_BY_WEIGHT.set(false)
 
                 if (size_filter) {
                     Styles.remove(size_filter)
                     size_filter = false
                 }
 
-                if (CONFIG.COLOR_BY_DEPTH) {
+                if (checked) {
                     const confirms = {}
 
                     Graphs.iterateAllNodes(node => {
@@ -1820,49 +1837,47 @@ const TangleGlumb = ($container, config = {}) => {
             }
         )
 
-        createToggleOption('SIZE_BY_WEIGHT', 'size by weight').change(function(
-            checked
-        ) {
-            $('#SIZE_BY_VALUE').prop('checked', false)
-            $('#SIZE_BY_DEPTH').prop('checked', false)
-            CONFIG.COLOR_BY_WEIGHT = !!checked
-
-            if (size_filter) {
-                Styles.remove(size_filter)
-                size_filter = false
-            }
-
-            if (CONFIG.COLOR_BY_WEIGHT) {
-                const confirms = {}
-
-                Graphs.iterateAllNodes(node => {
-                    calculateConfirms(node, confirms, false)
-                })
-
-                size_filter = Styles.add(node => {
-                    if (!confirms.hasOwnProperty(node.id))
-                        calculateConfirms(node, confirms, false)
-
-                    const nodeUI = VVG.graphics.getNodeUI(node.id)
-                    nodeUI.size =
-                        10 +
-                        (confirms[node.id] / VVG.graph.getNodesCount()) * 80
-                })
-            }
-        })
-
-        createToggleOption('SIZE_BY_VALUE', 'size by value', '').change(
+        createToggleOption('SIZE_BY_WEIGHT', 'size by weight').onChange(
             function(checked) {
-                $('#SIZE_BY_DEPTH').prop('checked', false)
-                $('#SIZE_BY_WEIGHT').prop('checked', false)
-                CONFIG.SIZE_BY_VALUE = !!checked
+                if (CONFIG.SIZE_BY_VALUE) OPTIONS.SIZE_BY_VALUE.set(false)
+                if (CONFIG.SIZE_BY_DEPTH) OPTIONS.SIZE_BY_DEPTH.set(false)
 
                 if (size_filter) {
                     Styles.remove(size_filter)
                     size_filter = false
                 }
 
-                if (CONFIG.SIZE_BY_VALUE) {
+                if (checked) {
+                    const confirms = {}
+
+                    Graphs.iterateAllNodes(node => {
+                        calculateConfirms(node, confirms, false)
+                    })
+
+                    size_filter = Styles.add(node => {
+                        if (!confirms.hasOwnProperty(node.id))
+                            calculateConfirms(node, confirms, false)
+
+                        const nodeUI = VVG.graphics.getNodeUI(node.id)
+                        nodeUI.size =
+                            10 +
+                            (confirms[node.id] / VVG.graph.getNodesCount()) * 80
+                    })
+                }
+            }
+        )
+
+        createToggleOption('SIZE_BY_VALUE', 'size by value', '').onChange(
+            function(checked) {
+                if (CONFIG.SIZE_BY_DEPTH) OPTIONS.SIZE_BY_DEPTH.set(false)
+                if (CONFIG.SIZE_BY_WEIGHT) OPTIONS.SIZE_BY_WEIGHT.set(false)
+
+                if (size_filter) {
+                    Styles.remove(size_filter)
+                    size_filter = false
+                }
+
+                if (checked) {
                     let maxVal = 0
                     Graphs.iterateAllNodes(node => {
                         if (
@@ -1934,15 +1949,13 @@ const TangleGlumb = ($container, config = {}) => {
             'COLOR_BY_NUMBER',
             'color by order',
             'colors the tx based on the order they were attached'
-        ).change(function(checked) {
-            CONFIG.COLOR_BY_NUMBER = !!checked
-
+        ).onChange(function(checked) {
             if (color_by_number_filter) {
                 Styles.remove(color_by_number_filter)
                 color_by_number_filter = false
             }
 
-            if (CONFIG.COLOR_BY_NUMBER) {
+            if (checked) {
                 color_by_number_filter = Styles.add(node => {
                     const nodeUI = VVG.graphics.getNodeUI(node.id)
                     nodeUI.border_color = hslToHex(
@@ -1958,67 +1971,53 @@ const TangleGlumb = ($container, config = {}) => {
             'REMOVE_FLOATING_NODES',
             'remove floating tx',
             'floating tx attach to an old, not displayed, part of the tangle'
-        ).change(function(checked) {
-            CONFIG.REMOVE_FLOATING_NODES = !!checked
-        })
+        ).onChange(function(checked) {})
         createToggleOption(
             'PIN_OLD_NODES',
             'pin old tx',
             'improves performance by not calculating physics'
-        ).change(function(checked) {
-            CONFIG.PIN_OLD_NODES = !!checked
-            if (!CONFIG.PIN_OLD_NODES) Graphs.unpinOldNodes()
+        ).onChange(function(checked) {
+            if (!checked) Graphs.unpinOldNodes()
         })
         createToggleOption(
             'REMOVE_OLD_NODES',
             `limit to ${Format.formatNumber(CONFIG.MAX_NODES)} tx`,
             'improves performance by removing old tx'
-        ).change(function(checked) {
-            CONFIG.REMOVE_OLD_NODES = !!checked
-        })
+        ).onChange(function(checked) {})
         createToggleOption(
             'SPAWN_NODE_NEAR_FINAL_POSITION',
             'reduce movement',
             'spawning new tx next to their referenced nodes'
-        ).change(function(checked) {
-            CONFIG.SPAWN_NODE_NEAR_FINAL_POSITION = !!checked
-        })
-        createToggleOption('LIGHT_LINKS', 'lighten links', '').change(function(
+        ).onChange(function(checked) {})
+        createToggleOption('LIGHT_LINKS', 'lighten links', '').onChange(
+            function(checked) {
+                CONFIG.LINK_COLOR = checked
+                    ? 0xaaaaaaff
+                    : CONFIG.DARK_MODE
+                    ? 0xeeeeeeff
+                    : CONFIG.LIGHT_LINK_COLOR
+                Graphs.iterateAllNodes(false, link => Color.colorLink(link))
+                // Graphs.iterateAllNodes((node) => Color.colorNode(node), (link) => Color.colorLink(link))
+            }
+        )
+        createToggleOption('DARK_MODE', 'dark mode', '').onChange(function(
             checked
         ) {
-            CONFIG.LIGHT_LINKS = !!checked
-            CONFIG.LINK_COLOR = CONFIG.LIGHT_LINKS
-                ? 0xaaaaaaff
-                : CONFIG.DARK_MODE
-                ? 0xeeeeeeff
-                : CONFIG.LIGHT_LINK_COLOR
-            Graphs.iterateAllNodes(false, link => Color.colorLink(link))
-            // Graphs.iterateAllNodes((node) => Color.colorNode(node), (link) => Color.colorLink(link))
-        })
-        createToggleOption('DARK_MODE', 'dark mode', '').change(function(
-            checked
-        ) {
-            CONFIG.DARK_MODE = !!checked
-            CONFIG.LINK_COLOR = CONFIG.DARK_MODE
-                ? 0xeeeeeeff
-                : CONFIG.LIGHT_LINK_COLOR
-            CONFIG.NODE_COLOR = CONFIG.DARK_MODE
-                ? 0xeeeeeeff
-                : CONFIG.LIGHT_NODE_COLOR
-            CONFIG.NODE_BG_COLOR = CONFIG.DARK_MODE
+            CONFIG.LINK_COLOR = checked ? 0xeeeeeeff : CONFIG.LIGHT_LINK_COLOR
+            CONFIG.NODE_COLOR = checked ? 0xeeeeeeff : CONFIG.LIGHT_NODE_COLOR
+            CONFIG.NODE_BG_COLOR = checked
                 ? 0x333333
                 : CONFIG.LIGHT_NODE_BG_COLOR
             Graphs.iterateAllNodes(false, link => Color.colorLink(link))
             Styles.clearCache()
-            $('body').toggleClass('dark-mode', CONFIG.DARK_MODE)
+            $('body').toggleClass('dark-mode', checked)
         })
         createToggleOption(
             'STATIC_FRONT',
             'center tangle',
             'new tx spawn in the center and tangles moves outwards'
-        ).change(function(checked) {
-            CONFIG.STATIC_FRONT = !!checked
-            if (CONFIG.STATIC_FRONT) {
+        ).onChange(function(checked) {
+            if (checked) {
                 VVG.layout.setForce(CONFIG.FORCE)
             } else {
                 VVG.layout.setForce({ x: 0, y: 0 })
@@ -2029,9 +2028,8 @@ const TangleGlumb = ($container, config = {}) => {
             'PAUSE_RENDERING',
             'freeze tangle',
             'stop node movement for better inspection'
-        ).change(function(checked) {
-            CONFIG.PAUSE_RENDERING = !!checked
-            if (CONFIG.PAUSE_RENDERING) {
+        ).onChange(function(checked) {
+            if (checked) {
                 VVG.renderer.pause()
             } else {
                 VVG.renderer.resume()
@@ -2039,12 +2037,8 @@ const TangleGlumb = ($container, config = {}) => {
         })
 
         function updateParameter(key, value) {
-            if (CONFIG.hasOwnProperty(key)) {
-                CONFIG[key] = value
-                if ($(`#${key}`).length) {
-                    $(`#${key}`).prop('checked', value)
-                    $(`#${key}`).change()
-                }
+            if (OPTIONS.hasOwnProperty(key)) {
+                OPTIONS[key].set(value)
             }
         }
 
@@ -2072,6 +2066,7 @@ const TangleGlumb = ($container, config = {}) => {
             tangle.emit('remove', tx)
         },
         getTxByHash: VVG.graph.getNode,
-        setNetworkName: UI.setNetworkName
+        setNetworkName: UI.setNetworkName,
+        setOption: Options.updateParameter
     }
 }
