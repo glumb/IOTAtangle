@@ -18,6 +18,9 @@ const TangleGlumb = ($container, config = {}) => {
         DRAGCOEFF: 0.02,
         TIMESTEP: 22,
 
+        // rendering
+        PAUSE_RENDERING: false,
+
         FORCE: { x: 0, y: 0.05 },
         CIRCLE_SIZE: 30, // size of a node
         REMOVE_LONLY_AFTER_S: 30, // remove floating nodes after time
@@ -1158,6 +1161,8 @@ const TangleGlumb = ($container, config = {}) => {
                 $confirmingCount.text('')
                 $confirmedByCount.text('')
             }
+
+            VVG.renderer.rerender() // rerender when selection or hover changed
         }
 
         function getActiveNode() {
@@ -2000,6 +2005,18 @@ const TangleGlumb = ($container, config = {}) => {
                 VVG.layout.setForce({ x: 0, y: 0 })
             }
             $('body').toggleClass('dark-mode', CONFIG.DARK_MODE)
+        })
+        createToggleOption(
+            'PAUSE_RENDERING',
+            'freeze tangle',
+            'stop node movement for better inspection'
+        ).change(function(checked) {
+            CONFIG.PAUSE_RENDERING = !!checked
+            if (CONFIG.PAUSE_RENDERING) {
+                VVG.renderer.pause()
+            } else {
+                VVG.renderer.resume()
+            }
         })
 
         function updateParameter(key, value) {
