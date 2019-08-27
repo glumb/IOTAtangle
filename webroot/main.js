@@ -961,6 +961,11 @@ const TangleGlumb = ($container, config = {}) => {
             </div>
         </div>`
         $container.insertAdjacentHTML('afterend', mainLeftTop)
+
+        return {
+            setNetworkName: name =>
+                (document.getElementById('network').innerText = name)
+        }
     })($container)
 
     /**
@@ -1589,36 +1594,50 @@ const TangleGlumb = ($container, config = {}) => {
 
             let tip = true
 
-            if (CONFIG.SPAWN_NODE_NEAR_FINAL_POSITION) VVG.graph.beginUpdate()
-
-            const spawnPosition = CONFIG.STATIC_FRONT
-                ? { x: Math.random() * 100, y: Math.random() * 100 }
-                : undefined
-
             let node = VVG.graph.getNode(data.hash)
-            if (!node) node = VVG.graph.addNode(data.hash, data, spawnPosition)
-
-            if (!node.number && CONFIG.STATIC_FRONT) {
-                //no number => new node
-                VVG.layout.pinNode(node, true)
-                pinnedNodesqueue[pinnedNodesPointer] = node
-                pinnedNodesPointer = ++pinnedNodesPointer % 10
-
-                if (pinnedNodesqueue[pinnedNodesPointer])
-                    VVG.layout.pinNode(
-                        pinnedNodesqueue[pinnedNodesPointer],
-                        false
-                    )
+            if (
+                (!node && !data.transaction_branch) ||
+                !data.transaction_trunk ||
+                !data.hash
+            ) {
+                console.warn(
+                    'new node must contail all required fields [branch,trunk,hash]'
+                )
+                return
             }
 
-            // adding link implicitly add nodes if not present
-            VVG.graph.addLink(data.transaction_branch, data.hash)
-            VVG.graph.addLink(data.transaction_trunk, data.hash)
+            if (!node) {
+                if (CONFIG.SPAWN_NODE_NEAR_FINAL_POSITION)
+                    VVG.graph.beginUpdate()
 
-            if (CONFIG.SPAWN_NODE_NEAR_FINAL_POSITION) VVG.graph.endUpdate()
+                const spawnPosition = CONFIG.STATIC_FRONT
+                    ? { x: Math.random() * 100, y: Math.random() * 100 }
+                    : undefined
 
-            for (const link of node.links) {
-                Color.colorLink(link)
+                node = VVG.graph.addNode(data.hash, data, spawnPosition)
+
+                if (!node.number && CONFIG.STATIC_FRONT) {
+                    //no number => new node
+                    VVG.layout.pinNode(node, true)
+                    pinnedNodesqueue[pinnedNodesPointer] = node
+                    pinnedNodesPointer = ++pinnedNodesPointer % 10
+
+                    if (pinnedNodesqueue[pinnedNodesPointer])
+                        VVG.layout.pinNode(
+                            pinnedNodesqueue[pinnedNodesPointer],
+                            false
+                        )
+                }
+
+                // adding link implicitly add nodes if not present
+                VVG.graph.addLink(data.transaction_branch, data.hash)
+                VVG.graph.addLink(data.transaction_trunk, data.hash)
+
+                if (CONFIG.SPAWN_NODE_NEAR_FINAL_POSITION) VVG.graph.endUpdate()
+
+                for (const link of node.links) {
+                    Color.colorLink(link)
+                }
             }
 
             node.milestone = data.milestone
@@ -2051,6 +2070,8 @@ const TangleGlumb = ($container, config = {}) => {
         },
         removeTx: tx => {
             tangle.emit('remove', tx)
-        }
+        },
+        getTxByHash: VVG.graph.getNode,
+        setNetworkName: UI.setNetworkName
     }
 }
