@@ -21,7 +21,7 @@
 
 <body>
   <div class="graph" id="graph"></div>
-
+  <button id="tangle-it">custom Tangle</button>
   <script type="application/javascript">
     const tg = TangleGlumb(document.getElementById('graph'), {
       CIRCLE_SIZE: 60,
@@ -38,7 +38,7 @@
       let hashRb = [],
         rbPointer = 0;
 
-      for (let i = 0; i < TANGLE_WIDTH; i++) {
+      for (let i = 0; i < tangleWidth; i++) {
         hashRb.push(Math.random() * 1000);
       }
 
@@ -51,17 +51,17 @@
           value: Math.floor(Math.random() * 10),
           timestamp: Date.now(),
           bundle_hash: "$bundle_hash$" + Math.floor(hash / 30),
-          transaction_branch: hashRb[Math.floor(Math.random() * TANGLE_WIDTH)] + '',
-          transaction_trunk: hashRb[Math.floor(Math.random() * TANGLE_WIDTH)] + '',
+          transaction_branch: hashRb[Math.floor(Math.random() * tangleWidth)] + '',
+          transaction_trunk: hashRb[Math.floor(Math.random() * tangleWidth)] + '',
           // milestone: (hash == 1999),
-          milestone: (Math.random() > 0.98),
+          milestone: (Math.random() > 0.99),
           tag: "$tag$",
         }
         if (Math.random() < 0.2) {
           tx.transaction_branch = (hash - 1000 * Math.random()) + ''
         }
         rbPointer = ++rbPointer %
-          TANGLE_WIDTH;
+          tangleWidth;
         hashRb[rbPointer] = tx.hash;
 
         hash++
@@ -74,12 +74,13 @@
       // }, SEND_INTERVAL);
 
       let txs = []
-      for (let i = 0; i < NUMBER_NODES; i++) {
+      for (let i = 0; i < numberOfTx; i++) {
         txs.push(createTX())
       }
+      let stop = false
 
       function unrollTx(cb, resolve) {
-        if (txs.length == 0) {
+        if (txs.length == 0 || stop) {
           resolve()
           return
         }
@@ -95,17 +96,40 @@
             unrollTx(cb, resolve)
           })
           return p
-        }
+        },
+        stop: () => stop = true
       }
     }
 
-    mockTxGenerator(NUMBER_NODES, TANGLE_WIDTH, TPS).start((tx) => {
+    let genHandle = null
+    var button = document.getElementById("tangle-it");
+    button.addEventListener("click", function (e) {
+      if (genHandle) genHandle.stop()
+      const nodes = window.prompt('A tangle just for you. Specify number of nodes', 1000);
+      const width = window.prompt('Specify width', 10);
+      const tps = window.prompt('Specify TPS', 10);
+      tg.removeTx()
+      genHandle = mockTxGenerator(nodes, width, tps)
+      genHandle.start((tx) => {
+        tg.updateTx([tx])
+      }).then(() => console.log('done'))
+    }, false);
+
+
+    genHandle = mockTxGenerator(NUMBER_NODES, TANGLE_WIDTH, TPS)
+    genHandle.start((tx) => {
       tg.updateTx([tx])
     }).then(() => console.log('done'))
 
     // tg.removeTx()
   </script>
-
+  <style>
+    button#tangle-it {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+    }
+  </style>
 </body>
 
 </html>
