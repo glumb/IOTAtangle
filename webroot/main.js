@@ -55,6 +55,8 @@ const TangleGlumb = ($container, config = {}) => {
         NODE_COLOR: 0,
         NODE_BG_COLOR: 0,
 
+        TITLE: 'The Tangle',
+
         ...config
     }
 
@@ -934,7 +936,7 @@ const TangleGlumb = ($container, config = {}) => {
 
     const UI = ($container => {
         const mainLeftTop = `<div id="title">
-            <h1>The Tangle <small id="network"></small></h1>
+            <h1>${CONFIG.TITLE} <small id="network"></small></h1>
             <div class="legend">
                 <span class="circle" id="tip"></span> tip <br>
                 <span class="circle" id="milestone"></span> milestone <br>
