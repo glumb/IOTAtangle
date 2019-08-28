@@ -397,32 +397,29 @@ const TangleGlumb = ($container, config = {}) => {
             cbLinks = false,
             seenNodes = []
         ) {
-            const queue = [node]
+            seenNodes.push(node)
+            let pointer = 0
 
-            while (queue.length !== 0) {
-                const node = queue.pop()
-                // const node = queue.shift()
-                seenNodes.push(node)
+            while (seenNodes.length > pointer) {
+                const node = seenNodes[pointer++]
 
                 if (cb(node)) return true
 
-                const links = node.links
-                for (let i = 0; i < links.length; i++) {
-                    const link = links[i]
+                for (const link of node.links) {
                     if (cbLinks) cbLinks(link)
 
                     if (
                         !up &&
                         link.toId === node.id &&
-                        seenNodes.indexOf(VVG.graph.getNode(link.fromId)) < 0
+                        !seenNodes.includes(VVG.graph.getNode(link.fromId))
                     ) {
-                        queue.push(VVG.graph.getNode(link.fromId))
+                        seenNodes.push(VVG.graph.getNode(link.fromId))
                     } else if (
                         up &&
                         link.fromId === node.id &&
-                        seenNodes.indexOf(VVG.graph.getNode(link.toId)) < 0
+                        !seenNodes.includes(VVG.graph.getNode(link.toId))
                     ) {
-                        queue.push(VVG.graph.getNode(link.toId))
+                        seenNodes.push(VVG.graph.getNode(link.toId))
                     }
                 }
             }
@@ -479,10 +476,10 @@ const TangleGlumb = ($container, config = {}) => {
                 for (const link of node.links) {
                     if (cbLinks) cbLinks(link)
 
-                    if (seenNodes.indexOf(VVG.graph.getNode(link.fromId)) < 0)
+                    if (!seenNodes.includes(VVG.graph.getNode(link.fromId)))
                         seenNodes.push(VVG.graph.getNode(link.fromId))
 
-                    if (seenNodes.indexOf(VVG.graph.getNode(link.toId)) < 0)
+                    if (!seenNodes.includes(VVG.graph.getNode(link.toId)))
                         seenNodes.push(VVG.graph.getNode(link.toId))
                 }
             }
@@ -999,18 +996,40 @@ const TangleGlumb = ($container, config = {}) => {
 
             const seenNodesBackwards = [],
                 seenNodesForward = [] // to get the nodes count
-            recursivelyColor(
+            const bh = (node.data || {}).bundle_hash
+
+            Iterators.dfsDirectedIterator(
                 node,
-                CONFIG.HIGHLIGHT_COLOR_BACKWARD,
-                CONFIG.HIGHLIGHT_COLOR_BACKWARD,
+                node => {
+                    const nodeUI = VVG.graphics.getNodeUI(node.id)
+                    nodeUI.border_color = CONFIG.HIGHLIGHT_COLOR_BACKWARD >>> 8
+
+                    //same color when same bundle
+                    if (bh && bh === ((node || {}).data || {}).bundle_hash)
+                        nodeUI.border_color = CONFIG.SAME_BUNDLE_COLOR
+                },
                 true,
+                link => {
+                    const linkUI = VVG.graphics.getLinkUI(link.id)
+                    linkUI.color = CONFIG.HIGHLIGHT_COLOR_BACKWARD
+                },
                 seenNodesBackwards
             )
-            recursivelyColor(
+            Iterators.dfsDirectedIterator(
                 node,
-                CONFIG.HIGHLIGHT_COLOR_FORWARD,
-                CONFIG.HIGHLIGHT_COLOR_FORWARD,
+                node => {
+                    const nodeUI = VVG.graphics.getNodeUI(node.id)
+                    nodeUI.border_color = CONFIG.HIGHLIGHT_COLOR_FORWARD >>> 8
+
+                    //same color when same bundle
+                    if (bh && bh === ((node || {}).data || {}).bundle_hash)
+                        nodeUI.border_color = CONFIG.SAME_BUNDLE_COLOR
+                },
                 false,
+                link => {
+                    const linkUI = VVG.graphics.getLinkUI(link.id)
+                    linkUI.color = CONFIG.HIGHLIGHT_COLOR_FORWARD
+                },
                 seenNodesForward
             )
 
@@ -1056,7 +1075,7 @@ const TangleGlumb = ($container, config = {}) => {
             const nodeId = node.id
             const links = node.links
             // skip seen nodes
-            if (seenNodes.indexOf(nodeId) >= 0) {
+            if (seenNodes.includes(nodeId)) {
                 return
             }
             seenNodes.push(nodeId)
