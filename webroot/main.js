@@ -1607,10 +1607,8 @@ const TangleGlumb = ($container, config = {}) => {
                 return
             }
 
+            if (CONFIG.SPAWN_NODE_NEAR_FINAL_POSITION) VVG.graph.beginUpdate()
             if (!node) {
-                if (CONFIG.SPAWN_NODE_NEAR_FINAL_POSITION)
-                    VVG.graph.beginUpdate()
-
                 const spawnPosition = CONFIG.STATIC_FRONT
                     ? { x: Math.random() * 100, y: Math.random() * 100 }
                     : undefined
@@ -1629,16 +1627,29 @@ const TangleGlumb = ($container, config = {}) => {
                             false
                         )
                 }
-
-                // adding link implicitly add nodes if not present
+            }
+            // adding link implicitly add nodes if not present
+            // todo make sure links are only added once
+            // also readd links whe node  exists to account for readding part of the tangle
+            if (
+                data.transaction_branch &&
+                !node.links.some(
+                    link => link.fromId === data.transaction_branch
+                )
+            ) {
                 VVG.graph.addLink(data.transaction_branch, data.hash)
+            }
+            if (
+                data.transaction_trunk &&
+                !node.links.some(link => link.fromId === data.transaction_trunk)
+            ) {
                 VVG.graph.addLink(data.transaction_trunk, data.hash)
+            }
 
-                if (CONFIG.SPAWN_NODE_NEAR_FINAL_POSITION) VVG.graph.endUpdate()
+            if (CONFIG.SPAWN_NODE_NEAR_FINAL_POSITION) VVG.graph.endUpdate()
 
-                for (const link of node.links) {
-                    Color.colorLink(link)
-                }
+            for (const link of node.links) {
+                Color.colorLink(link)
             }
 
             node.milestone = data.milestone
