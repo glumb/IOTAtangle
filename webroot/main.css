@@ -45,10 +45,6 @@ div#message {
   bottom: 11px;
 }
 
-#node-counter {}
-
-#tps {}
-
 #tx-info {
   position: absolute;
   left: 10px;
@@ -58,10 +54,20 @@ div#message {
 
 div#title {
   position: absolute;
-  top: 10px;
+  top: 0px;
   left: 10px;
   margin: 20px;
   z-index: 2;
+}
+
+#title input {
+  border: 1px solid #333;
+  margin: 10px 0;
+  padding: 5px
+}
+
+#title h1 {
+  margin: 10px 0 20px 0;
 }
 
 span#confirmed {
@@ -114,12 +120,6 @@ span#node {
   border-radius: 50%;
   border: 2px solid #000;
   margin: 0 3px
-}
-
-#title input {
-  border: 1px solid #333;
-  margin: 10px 0;
-  padding: 5px
 }
 
 div#donate {
