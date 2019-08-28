@@ -342,7 +342,7 @@ const TangleGlumb = ($container, config = {}) => {
      */
     const Loading = (($, $container) => {
         $container.insertAdjacentHTML(
-            'afterend',
+            'beforeend',
             ` <div class="loader-wrapper">
                 <div class="loader"></div>
                 <div class="progress"></div>
@@ -960,7 +960,7 @@ const TangleGlumb = ($container, config = {}) => {
                 <span id="bundle-hash-info"></span>
             </div>
         </div>`
-        $container.insertAdjacentHTML('afterend', mainLeftTop)
+        $container.insertAdjacentHTML('beforeend', mainLeftTop)
 
         return {
             setNetworkName: name =>
