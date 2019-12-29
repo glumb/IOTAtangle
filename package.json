@@ -9,13 +9,6 @@
   "author": "Maximilian Beck <maximilian@glumb.de> (http://glumb.de/)",
   "license": "MIT",
   "dependencies": {
-    "denque": "1.4.1",
-    "double-ended-queue": "2.1.0-0",
-    "express": "4.17.1",
-    "express-minify": "1.0.0",
-    "iota.lib.js": "0.5.2",
-    "socketio": "1.0.0",
-    "uglify-es": "3.3.9",
-    "zeromq": "5.1.0"
+
   }
 }

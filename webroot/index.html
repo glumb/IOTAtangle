@@ -6,24 +6,11 @@
   <title>the IOTA tangle</title>
   <link rel="stylesheet" href="main.css">
   <script src="lib/vivagraph.js"></script>
-  <script src="circleNode.js"></script>
+  <script src="main.js"></script>
   <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
     integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g=" crossorigin="anonymous"></script>
-  <script src="/socket.io/socket.io.js"></script>
 
-  <link rel="apple-touch-icon-precomposed" sizes="57x57" href="/icons/apple-touch-icon-57x57.png" />
-  <link rel="apple-touch-icon-precomposed" sizes="114x114" href="/icons/apple-touch-icon-114x114.png" />
-  <link rel="apple-touch-icon-precomposed" sizes="72x72" href="/icons/apple-touch-icon-72x72.png" />
-  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/icons/apple-touch-icon-144x144.png" />
-  <link rel="apple-touch-icon-precomposed" sizes="60x60" href="/icons/apple-touch-icon-60x60.png" />
-  <link rel="apple-touch-icon-precomposed" sizes="120x120" href="/icons/apple-touch-icon-120x120.png" />
-  <link rel="apple-touch-icon-precomposed" sizes="76x76" href="/icons/apple-touch-icon-76x76.png" />
-  <link rel="apple-touch-icon-precomposed" sizes="152x152" href="/icons/apple-touch-icon-152x152.png" />
-  <link rel="icon" type="image/png" href="/icons/favicon-196x196.png" sizes="196x196" />
-  <link rel="icon" type="image/png" href="/icons/favicon-96x96.png" sizes="96x96" />
-  <link rel="icon" type="image/png" href="/icons/favicon-32x32.png" sizes="32x32" />
-  <link rel="icon" type="image/png" href="/icons/favicon-16x16.png" sizes="16x16" />
-  <link rel="icon" type="image/png" href="/icons/favicon-128.png" sizes="128x128" />
+
   <meta name="application-name" content="The IOTA TAngle" />
   <meta name="theme-color" content="#ffffff">
 
@@ -34,135 +21,115 @@
 
 <body>
   <div class="graph" id="graph"></div>
+  <button id="tangle-it">custom Tangle</button>
+  <script type="application/javascript">
+    const tg = TangleGlumb(document.getElementById('graph'), {
+      CIRCLE_SIZE: 60,
+      PIN_OLD_NODES: false,
+      STATIC_FRONT: false
+    })
 
-  <div id="title">
-    <h1>The Tangle <small id="network"></small></h1>
-    <div class="legend">
-      <span class="circle" id="tip"></span> tip <br>
-      <span class="circle" id="milestone"></span> milestone <br>
-      <span class="circle" id="node"></span> transaction <br>
-      <span class="circle" id="confirmed"></span> confirmed <br>
-      <br> select a transaction to view<br>
-      <span class="circle" id="confirmed-by-tx"></span> <span id="confirmed-by-count"></span> confirmed by tx<br>
-      <span class="circle" id="confirming-tx"></span> <span id="confirming-count"></span> confirming tx<br>
-      <span class="circle" id="bundle"></span> same bundle <br>
-    </div>
-    <br> enter a tx hash<br>
-    <input id="hash-input" type="text" name="hash" placeholder="hash">
-    <span id="hash-info"></span>
-    <br> enter a tag<br>
-    <input id="tag-input" type="text" name="tag" placeholder="tag or regex">
-    <span id="tag-info"></span>
-    <br> enter a bundle-hash<br>
-    <input id="bundle-hash-input" type="text" name="bundle-hash" placeholder="bundle-hash">
-    <span id="bundle-hash-info"></span>
-  </div>
+    const NUMBER_NODES = 4000
+    const TANGLE_WIDTH = 60
+    const TPS = 100
 
-  <div id="options">
-    <div class="option" data-tooltip="floating tx attach to an old, not displayed, part of the tangle">
-      <label class="option-label" for="REMOVE_FLOATING_NODES">
-        <span>remove floating tx</span>
-        <input class="tgl tgl-light" id="REMOVE_FLOATING_NODES" type="checkbox" />
-        <div class="tgl-btn"></div>
-      </label>
-    </div>
-    <div class="option" data-tooltip="improves performance by removing old tx">
-      <label class="option-label" for="REMOVE_OLD_NODES">
-        <span>limit to 4k tx</span>
-        <input class="tgl tgl-light" id="REMOVE_OLD_NODES" type="checkbox" />
-        <div class="tgl-btn"></div>
-      </label>
-    </div>
-    <div class="option" data-tooltip="improves performance by not calculating physics">
-      <label class="option-label" for="PIN_OLD_NODES">
-        <span>pin old tx</span>
-        <input class="tgl tgl-light" id="PIN_OLD_NODES" type="checkbox" />
-        <div class="tgl-btn"></div>
-      </label>
-    </div>
-    <div class="option" data-tooltip="new tx spawn in the center and tangles moves outwards">
-      <label class="option-label" for="STATIC_FRONT">
-        <span>center tangle</span>
-        <input class="tgl tgl-light" id="STATIC_FRONT" type="checkbox" />
-        <div class="tgl-btn"></div>
-      </label>
-    </div>
-    <div class="option" data-tooltip="spawning new tx next to their referenced nodes">
-      <label class="option-label" for="SPAWN_NODE_NEAR_FINAL_POSITION">
-        <span>reduce movement</span>
-        <input class="tgl tgl-light" id="SPAWN_NODE_NEAR_FINAL_POSITION" type="checkbox" />
-        <div class="tgl-btn"></div>
-      </label>
-    </div>
-    <div class="option">
-      <label class="option-label" for="SIZE_BY_DEPTH">
-        <span>size by # of confirms</span>
-        <input class="tgl tgl-light" id="SIZE_BY_DEPTH" type="checkbox" />
-        <div class="tgl-btn"></div>
-      </label>
-    </div>
-    <div class="option" data-tooltip="only for displayed part of the tangle and own-weight: 1">
-      <label class="option-label" for="SIZE_BY_WEIGHT">
-        <span>size by weight</span>
-        <input class="tgl tgl-light" id="SIZE_BY_WEIGHT" type="checkbox" />
-        <div class="tgl-btn"></div>
-      </label>
-    </div>
-    <div class="option">
-      <label class="option-label" for="SIZE_BY_VALUE">
-        <span>size by value</span>
-        <input class="tgl tgl-light" id="SIZE_BY_VALUE" type="checkbox" />
-        <div class="tgl-btn"></div>
-      </label>
-    </div>
-    <div class="option" data-tooltip="colors the tx based on the order they were attached">
-      <label class="option-label" for="COLOR_BY_NUMBER">
-        <span>color by order</span>
-        <input class="tgl tgl-light" id="COLOR_BY_NUMBER" type="checkbox" />
-        <div class="tgl-btn"></div>
-      </label>
-    </div>
-    <div class="option">
-      <label class="option-label" for="LIGHT_LINKS">
-        <span>lighten links</span>
-        <input class="tgl tgl-light" id="LIGHT_LINKS" type="checkbox" />
-        <div class="tgl-btn"></div>
-      </label>
-    </div>
-    <div class="option">
-      <label class="option-label" for="DARK_MODE">
-        <span>dark mode</span>
-        <input class="tgl tgl-light" id="DARK_MODE" type="checkbox" />
-        <div class="tgl-btn"></div>
-      </label>
-    </div>
-  </div>
+    const mockTxGenerator = (numberOfTx, tangleWidth, tps) => {
 
-  <div id="stats">
-    <div id="tips-ratio">0.0%</div>
-    <div id="confirmed-ratio">0.0%</div>
-    <div id="tps">0.0</div>
-    <div id="node-counter">1800</div>
-  </div>
+      let hashRb = [],
+        rbPointer = 0;
 
-  <div id="github">
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
-    <a class="github-button" href="https://github.com/glumb/IOTAtangle" data-show-count="true" aria-label="Star glumb/IOTAtangle on GitHub">Star on GitHub</a>
-  </div>
+      for (let i = 0; i < tangleWidth; i++) {
+        hashRb.push(Math.random() * 1000);
+      }
 
-  <div id="tx-info"></div>
+      let hash = 1000
 
-  <!-- <div id="message">
-    <button onclick="$(this).parent().hide();">close</button><br> Maintenance - will be back soon <br>
-  </div> -->
+      function createTX() {
+        const tx = {
+          hash: hash + '',
+          address: "$addr$",
+          value: Math.floor(Math.random() * 10),
+          timestamp: Date.now(),
+          bundle_hash: "$bundle_hash$" + Math.floor(hash / 30),
+          transaction_branch: hashRb[Math.floor(Math.random() * tangleWidth)] + '',
+          transaction_trunk: hashRb[Math.floor(Math.random() * tangleWidth)] + '',
+          // milestone: (hash == 1999),
+          milestone: (Math.random() > 0.99),
+          tag: "$tag$",
+        }
+        if (Math.random() < 0.2) {
+          tx.transaction_branch = (hash - 1000 * Math.random()) + ''
+        }
+        rbPointer = ++rbPointer %
+          tangleWidth;
+        hashRb[rbPointer] = tx.hash;
 
-  <script src="main.js"></script>
+        hash++
 
-  <div class="loader-wrapper">
-    <div class="loader"></div>
-    <div class="progress"></div>
-  </div>
+        return tx
+      }
 
+      // setInterval(() => {
+      //   tg.updateTx([createTX()])
+      // }, SEND_INTERVAL);
+
+      let txs = []
+      for (let i = 0; i < numberOfTx; i++) {
+        txs.push(createTX())
+      }
+      let stop = false
+
+      function unrollTx(cb, resolve) {
+        if (txs.length == 0 || stop) {
+          resolve()
+          return
+        }
+        for (let i = 0; i < tps / 10 && txs.length > 0; i++) {
+          cb(txs.shift())
+        }
+        setTimeout(() => unrollTx(cb, resolve), 1000 / (tps / 10))
+      }
+
+      return {
+        start: (cb) => {
+          const p = new Promise((resolve, rej) => {
+            unrollTx(cb, resolve)
+          })
+          return p
+        },
+        stop: () => stop = true
+      }
+    }
+
+    let genHandle = null
+    var button = document.getElementById("tangle-it");
+    button.addEventListener("click", function (e) {
+      if (genHandle) genHandle.stop()
+      const nodes = window.prompt('A tangle just for you. Specify number of nodes', 1000);
+      const width = window.prompt('Specify width', 10);
+      const tps = window.prompt('Specify TPS', 10);
+      tg.removeTx()
+      genHandle = mockTxGenerator(nodes, width, tps)
+      genHandle.start((tx) => {
+        tg.updateTx([tx])
+      }).then(() => console.log('done'))
+    }, false);
+
+
+    genHandle = mockTxGenerator(NUMBER_NODES, TANGLE_WIDTH, TPS)
+    genHandle.start((tx) => {
+      tg.updateTx([tx])
+    }).then(() => console.log('done'))
+
+    // tg.removeTx()
+  </script>
+  <style>
+    button#tangle-it {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+    }
+  </style>
 </body>
 
 </html>
