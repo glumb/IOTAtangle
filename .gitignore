@@ -41,3 +41,6 @@ mymainnetdata.json
 
 # VS Code config
 .vscode
+
+# .DS_Store
+.DS_Store
