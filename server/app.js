@@ -72,7 +72,7 @@ module.exports = function initTangleViewer(NAME, LSM_NODE, ZMQ_ENDPOINT, WEB_POR
         uglifyJsModule: uglifyEs,
     }))
 
-    app.use(express.static(__dirname + '/webroot'))
+    app.use(express.static(__dirname + '/../webroot'))
 
     server.listen(WEB_PORT)
 
