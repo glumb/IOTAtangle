@@ -64,6 +64,8 @@ const TangleGlumb = ($container, config = {}) => {
     NODE_TIP_BORDER_SIZE: 0.6,
 
     TITLE: "The Tangle",
+    EXPLORER_TX_LINK: "https://thetangle.org/transaction/",
+    EXPLORER_BUNDLE_LINK: "https://thetangle.org/bundle/",
 
     ...config
   };
@@ -1158,14 +1160,14 @@ const TangleGlumb = ($container, config = {}) => {
             node.data.tag +
             "<br>" +
             "tx hash: " +
-            node.data.hash +
+            ((CONFIG.EXPLORER_TX_LINK) ? "<a href='" + CONFIG.EXPLORER_TX_LINK + node.data.hash + "' >" + node.data.hash + "</a>" : node.data.hash) +
             "<br>" +
             "bundle hash (" +
             node.data.current_index +
             "|" +
             node.data.last_index +
             "): " +
-            node.data.bundle_hash +
+            ((CONFIG.EXPLORER_BUNDLE_LINK) ? "<a href='" + CONFIG.EXPLORER_BUNDLE_LINK + node.data.bundle_hash + "' >" + node.data.bundle_hash + "</a>" : node.data.bundle_hash) +
             "<br>";
         }
         $confirmingCount.text(linkedNodes.seenNodesForward.length - 1);
